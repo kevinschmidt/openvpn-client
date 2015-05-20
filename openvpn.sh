@@ -65,6 +65,19 @@ EOF
     chmod 0600 $auth
 }
 
+### configfile: Set a custom config file
+# Arguments:
+#   configfile) for example openvpn.conf
+# Return: the config file will be symlinked to /vpn/vpn.conf
+configfile() { local configfile="$1"
+    [[ -e /vpn/$configfile ]] || {
+        echo "ERROR: invalid configfile specified: $configfile" >&2
+        return
+    }
+
+    ln -sf /vpn/$configfile /vpn/vpn.conf
+}
+
 ### usage: Help
 # Arguments:
 #   none)
@@ -76,6 +89,7 @@ Options (fields in '[]' are optional, '<>' are required):
     -h          This help
     -t \"\"       Configure timezone
                 possible arg: \"[timezone]\" - zoneinfo timezone for container
+    -c \"[filename]\" Configure custom vpn config file in /vpn to use, will not be used if -v is specified
     -v \"<server;user;password>\" Configure OpenVPN
                 required arg: \"<server>;<user>;<password>\"
                 <server> to connect to
@@ -87,10 +101,11 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":ht:v:" opt; do
+while getopts ":ht:c:v:" opt; do
     case "$opt" in
         h) usage ;;
         t) timezone "$OPTARG" ;;
+        c) configfile "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
